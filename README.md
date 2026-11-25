@@ -5,8 +5,8 @@ Production-grade full-stack LLM Chatbot engineered with FastAPI, LiteLLM gateway
 ---
 
 ## 1. Live URLs
-* **Frontend**: [Pending Deployment - see Phase 15]
-* **Backend**: [Pending Deployment - see Phase 15]
+* **Frontend**: https://lyftr-ai-iota.vercel.app/
+* **Backend**: https://lyftrai-p0mb.onrender.com
 * **GitHub Repository**: https://github.com/divyanshu-7870/LyftrAI
 
 ---

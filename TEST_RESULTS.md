@@ -34,3 +34,21 @@ Summary: 7 tests run, 7 passed, 0 failed.
 | `X-Simulate-Failure: *=429` in Docker | POST with all keys failed simulation | HTTP 503 `{"detail": "all providers unavailable"}`, nothing in SQLite history | HTTP 503 `{"detail": "all providers unavailable"}`, session history returns 404 | **PASS** |
 | History Retrieval in Docker | GET `/sessions/s-docker-alex/messages` | Returns 4 turns in order without system prompt | HTTP 200, 4 turns returned in chronological order | **PASS** |
 | SQLite Docker Volume Persistence Across Container Restart & `make down` / `make up` | Saved session `s-docker-persist-12345` with code `778899`, restarted container, then executed `make down` and `make up` | Previous session history survives and remains accessible | HTTP 200, 2 messages intact, code `778899` present | **PASS** |
+
+## Public Post-Deployment Live Verification
+
+Target Backend: `https://lyftrai-p0mb.onrender.com`
+Target Frontend: `https://lyftr-ai-iota.vercel.app/`
+
+| Public Test | Action / Request | Expected Result | Actual Observed Result | Status |
+|-------------|------------------|-----------------|------------------------|--------|
+| Public Frontend HTTP 200 | GET `https://lyftr-ai-iota.vercel.app/` | HTTP 200, assets served | HTTP 200, headers `access-control-allow-origin: *` | **PASS** |
+| Public Backend Health | GET `https://lyftrai-p0mb.onrender.com/health` | HTTP 200, `{"status": "ok", "keys_configured": 2, "cache_enabled": true}` | HTTP 200, `{"status": "ok", "keys_configured": 2, "cache_enabled": true}` | **PASS** |
+| Public Backend CORS | OPTIONS `https://lyftrai-p0mb.onrender.com/chat` with Origin `https://lyftr-ai-iota.vercel.app` | HTTP 200/204, allowed origin present | HTTP 200, `access-control-allow-origin: https://lyftr-ai-iota.vercel.app` | **PASS** |
+| Public Live Inference (Turn 1) | POST `/chat` with session `s-public-eval-dbcb9bd7` | HTTP 200, `resolution_source: "LIVE_INFERENCE"`, `key_id: "key_1"`, real tokens | HTTP 200, `LIVE_INFERENCE`, `key_id: "key_1"`, latency: 748ms, input_tokens: 29, output_tokens: 23 | **PASS** |
+| Public Multi-Turn Retention (Turn 2) | POST `/chat` query for name & code | Retains earlier context, returns "Alex" and code | HTTP 200, reply retains name and code, input_tokens: 65 | **PASS** |
+| Public Cross-Session Caching | Same initial prompt across two separate public sessions | Request 2 returns `LLM_CACHE`, identical reply, `key_id: null`, latency < live call | Request 2: `LLM_CACHE`, identical reply, `key_id: null`, latency 1ms (< 564ms live) | **PASS** |
+| Public `X-Simulate-Failure: key_1=429` | POST `/chat` with header | Falls back to `key_2` with real response | HTTP 200, `key_id: "key_2"`, `fallback_attempts: 1`, real answer returned | **PASS** |
+| Public `X-Simulate-Failure: *=429` | POST `/chat` with all fail header | HTTP 503 `{"detail": "all providers unavailable"}` | HTTP 503 `{"detail": "all providers unavailable"}` | **PASS** |
+| Public History Isolation for Failed Turns | GET `/sessions/s-pub-fail-all-.../messages` | HTTP 404 `{"detail": "session not found"}` | HTTP 404 `{"detail": "session not found"}` | **PASS** |
+| Public Session History Endpoint | GET `/sessions/s-public-eval-dbcb9bd7/messages` | HTTP 200, 4 messages in order, no system prompt | HTTP 200, 4 turns returned in chronological order | **PASS** |

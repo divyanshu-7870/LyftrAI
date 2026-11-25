@@ -196,10 +196,10 @@ Status Legend:
 ---
 
 ## 12. Deployment & Verification
-- [ ] Backend deployed and publicly reachable (BLOCKED - awaiting Render credentials/push)
-- [ ] Frontend deployed and publicly reachable (BLOCKED - awaiting Vercel credentials/push)
-- [ ] Frontend connected to live backend; CORS verified
-- [ ] Public verification of health, live inference, caching, failover, token tracking, history
+- [x] Backend deployed and publicly reachable (https://lyftrai-p0mb.onrender.com)
+- [x] Frontend deployed and publicly reachable (https://lyftr-ai-iota.vercel.app/)
+- [x] Frontend connected to live backend; CORS verified
+- [x] Public verification of health, live inference, caching, failover, token tracking, history
 
 ---
 
