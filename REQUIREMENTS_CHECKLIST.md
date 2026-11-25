@@ -181,7 +181,7 @@ Status Legend:
 - [x] `docker-compose.yml` running backend at port 8000 and frontend at port 3000
 - [x] Named volume mounted at `/data` for SQLite persistence
 - [x] `Makefile` with working `make up` and `make down`
-- [ ] History survives container restart (to verify when Docker daemon is available)
+- [x] History survives container restart (verified with docker compose restart and make down / make up)
 
 ---
 

@@ -17,3 +17,20 @@ LiteLLM Model: `gemini/gemini-3.5-flash-lite`
 | `test_failover_simulation` | `X-Simulate-Failure: key_1=429` and `key_1=500` | HTTP 200, `key_id = "key_2"`, `fallback_attempts = 1`, real assistant reply | HTTP 200, `key_id = "key_2"`, `fallback_attempts = 1` for both 429 and 500 simulations. | **PASS** |
 
 Summary: 7 tests run, 7 passed, 0 failed.
+
+## Docker Container & SQLite Volume Persistence Verification
+
+| Test Scenario | Steps Executed | Expected Result | Actual Observed Result | Status |
+|---------------|----------------|-----------------|------------------------|--------|
+| `make up` Clean Stack Startup | Built multi-stage Docker images and launched containers with compose | Both containers running (`backend:8000`, `frontend:3000`) | Both services healthy and responding | **PASS** |
+| `GET /health` in Docker | HTTP GET to `http://localhost:8000/health` | HTTP 200, keys configured >= 2, cache enabled | HTTP 200, `{"status": "ok", "keys_configured": 2, "cache_enabled": true}` | **PASS** |
+| Frontend HTTP 200 in Docker | HTTP GET to `http://localhost:3000` | Nginx serves compiled SPA with all assets | HTTP 200, Nginx 1.31.10 serving Vite SPA bundle | **PASS** |
+| Real Containerized Chat Inference | POST to `/chat` with session `s-docker-alex` | HTTP 200, `LIVE_INFERENCE`, real tokens, real latency | HTTP 200, `LIVE_INFERENCE`, latency: 1470ms, input_tokens: 18, output_tokens: 19 | **PASS** |
+| Multi-turn Context in Docker | Turn 2 query "What is my name?" | Retains earlier context, replies "Alex." | HTTP 200, reply: "Alex.", input_tokens: 49 | **PASS** |
+| Session Isolation in Docker | Query "What is my name?" in new session `s-docker-bob` | Does not leak Alex context | HTTP 200, replies: "I don't know your name..." | **PASS** |
+| Cross-Session Response Caching in Docker | Same initial prompt across `s-docker-cache1` and `s-docker-cache2` | Request 2 returns `LLM_CACHE`, identical reply, `key_id: null`, lower latency | Request 2: `LLM_CACHE`, identical reply "343", `key_id: null`, latency 251ms (< 696ms live) | **PASS** |
+| `X-Simulate-Failure: key_1=429` in Docker | POST with failover header | Real answer via `key_2`, fallback_attempts: 1 | HTTP 200, `key_id: "key_2"`, `fallback_attempts: 1`, real answer returned | **PASS** |
+| `X-Simulate-Failure: key_1=500` in Docker | POST with failover header | Real answer via `key_2`, fallback_attempts: 1 | HTTP 200, `key_id: "key_2"`, `fallback_attempts: 1`, real answer returned | **PASS** |
+| `X-Simulate-Failure: *=429` in Docker | POST with all keys failed simulation | HTTP 503 `{"detail": "all providers unavailable"}`, nothing in SQLite history | HTTP 503 `{"detail": "all providers unavailable"}`, session history returns 404 | **PASS** |
+| History Retrieval in Docker | GET `/sessions/s-docker-alex/messages` | Returns 4 turns in order without system prompt | HTTP 200, 4 turns returned in chronological order | **PASS** |
+| SQLite Docker Volume Persistence Across Container Restart & `make down` / `make up` | Saved session `s-docker-persist-12345` with code `778899`, restarted container, then executed `make down` and `make up` | Previous session history survives and remains accessible | HTTP 200, 2 messages intact, code `778899` present | **PASS** |
